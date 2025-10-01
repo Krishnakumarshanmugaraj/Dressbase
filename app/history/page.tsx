@@ -1,9 +1,20 @@
 import Link from "next/link"
-import { Sparkles, ArrowLeft } from "lucide-react"
+import { Sparkles, ArrowLeft, LogOut } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { HistoryView } from "@/components/history-view"
+import { createClient } from "@/lib/supabase/server"
+import { redirect } from "next/navigation"
 
-export default function HistoryPage() {
+export default async function HistoryPage() {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    redirect("/auth/login")
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50">
       {/* Header */}
@@ -23,6 +34,20 @@ export default function HistoryPage() {
                 DressLog
               </h1>
             </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="text-sm text-muted-foreground hidden sm:inline">{user.email}</span>
+            <form action="/auth/logout" method="post">
+              <Button
+                type="submit"
+                variant="ghost"
+                size="icon"
+                className="hover:bg-red-50 hover:text-red-600"
+                title="Logout"
+              >
+                <LogOut className="w-5 h-5" />
+              </Button>
+            </form>
           </div>
         </div>
       </header>

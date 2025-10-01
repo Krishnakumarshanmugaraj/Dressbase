@@ -1,9 +1,19 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { put } from "@vercel/blob"
-import { getSupabaseServerClient } from "@/lib/supabase/server"
+import { createClient } from "@/lib/supabase/server"
 
 export async function POST(request: NextRequest) {
   try {
+    const supabase = await createClient()
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser()
+
+    if (authError || !user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
     const formData = await request.formData()
     const date = formData.get("date") as string
     const color = formData.get("color") as string
@@ -23,8 +33,6 @@ export async function POST(request: NextRequest) {
       imageUrl = blob.url
     }
 
-    // Save to database
-    const supabase = await getSupabaseServerClient()
     const { data, error } = await supabase
       .from("dress_entries")
       .insert({
@@ -32,6 +40,7 @@ export async function POST(request: NextRequest) {
         color,
         detected_color: detectedColor,
         image_url: imageUrl,
+        user_id: user.id,
       })
       .select()
       .single()
@@ -50,10 +59,19 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
+    const supabase = await createClient()
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser()
+
+    if (authError || !user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
     const { searchParams } = new URL(request.url)
     const filter = searchParams.get("filter") || "all"
 
-    const supabase = await getSupabaseServerClient()
     let query = supabase.from("dress_entries").select("*").order("date", { ascending: false })
 
     // Apply date filters

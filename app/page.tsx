@@ -1,9 +1,20 @@
 import Link from "next/link"
 import { DressEntryForm } from "@/components/dress-entry-form"
-import { Sparkles } from "lucide-react"
+import { Sparkles, LogOut } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { createClient } from "@/lib/supabase/server"
+import { redirect } from "next/navigation"
 
-export default function Home() {
+export default async function Home() {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    redirect("/auth/login")
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50">
       {/* Header */}
@@ -17,11 +28,25 @@ export default function Home() {
               DressLog
             </h1>
           </div>
-          <Link href="/history">
-            <Button variant="outline" className="border-pink-300 hover:bg-pink-50 bg-transparent">
-              View History
-            </Button>
-          </Link>
+          <div className="flex items-center gap-3">
+            <span className="text-sm text-muted-foreground hidden sm:inline">{user.email}</span>
+            <Link href="/history">
+              <Button variant="outline" className="border-pink-300 hover:bg-pink-50 bg-transparent">
+                View History
+              </Button>
+            </Link>
+            <form action="/auth/logout" method="post">
+              <Button
+                type="submit"
+                variant="ghost"
+                size="icon"
+                className="hover:bg-red-50 hover:text-red-600"
+                title="Logout"
+              >
+                <LogOut className="w-5 h-5" />
+              </Button>
+            </form>
+          </div>
         </div>
       </header>
 

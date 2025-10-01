@@ -1,18 +1,25 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { getSupabaseServerClient } from "@/lib/supabase/server"
+import { createClient } from "@/lib/supabase/server"
 import { del } from "@vercel/blob"
 
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = params
+    const supabase = await createClient()
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser()
+
+    if (authError || !user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    const { id } = await params
 
     if (!id) {
       return NextResponse.json({ error: "Missing entry ID" }, { status: 400 })
     }
 
-    const supabase = await getSupabaseServerClient()
-
-    // First, get the entry to retrieve the image URL
     const { data: entry, error: fetchError } = await supabase
       .from("dress_entries")
       .select("image_url")
@@ -34,7 +41,6 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
       }
     }
 
-    // Delete from database
     const { error: deleteError } = await supabase.from("dress_entries").delete().eq("id", id)
 
     if (deleteError) {
