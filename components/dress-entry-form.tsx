@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Calendar, Upload, Loader2, CheckCircle2, Sparkles } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { detectDominantColor } from "@/lib/color-detection"
 
 export function DressEntryForm() {
   const router = useRouter()
@@ -38,25 +39,12 @@ export function DressEntryForm() {
 
     setIsDetecting(true)
     try {
-      const formData = new FormData()
-      formData.append("image", image)
-
-      const response = await fetch("/api/detect-color", {
-        method: "POST",
-        body: formData,
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || "Failed to detect color")
-      }
-
-      const data = await response.json()
-      setDetectedColor(data.detectedColor)
-      setColor(data.detectedColor)
+      const result = await detectDominantColor(image)
+      setDetectedColor(result.color)
+      setColor(result.color)
     } catch (error) {
       console.error("Error detecting color:", error)
-      alert("AI color detection is currently unavailable. Please enter the color manually.")
+      alert("Failed to detect color. Please enter the color manually.")
     } finally {
       setIsDetecting(false)
     }
